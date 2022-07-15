@@ -319,6 +319,10 @@ if __name__ == "__main__":
                 # Apply any specified click model.
                 train_features_df = cm.apply_click_model(train_features_df, args.click_model,
                                                          downsample=args.downsample)
+                print(train_features_df['grade'].value_counts())
+                import time 
+                time.sleep(5)
+
                 # Now write out in XGB/SVM Rank format
                 print("NAN counts: %s" % train_features_df.isna().any().count())
                 train_features_df = train_features_df.fillna(0)
