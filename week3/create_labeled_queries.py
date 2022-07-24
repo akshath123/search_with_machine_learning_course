@@ -9,6 +9,8 @@ import csv
 import nltk
 stemmer = nltk.stem.PorterStemmer()
 
+import unicodedata 
+
 categories_file_name = r'/workspace/datasets/product_data/categories/categories_0001_abcat0010000_to_pcmcat99300050000.xml'
 
 queries_file_name = r'/workspace/datasets/train.csv'
@@ -50,7 +52,31 @@ df = df[df['category'].isin(categories)]
 
 # IMPLEMENT ME: Convert queries to lowercase, and optionally implement other normalization, like stemming.
 
+def preprocessing(query): 
+    
+    query = ''.join([c for c in unicodedata.normalize('NFD', query) if unicodedata.category(c) != 'Mn'])
+    query = ''.join([c if c.isalnum() else ' ' for c in query])
+    query_tokens = [stemmer.stem(token.lower()) for token in query.split()]
+    query = ' '.join(query_tokens)
+    return query 
+
+df['query'] = df['query'].apply(lambda query: preprocessing(query))
+
 # IMPLEMENT ME: Roll up categories to ancestors to satisfy the minimum number of queries per category.
+category_to_queries_count = df.category.value_counts().to_dict()
+parent_category_map = parents_df.set_index('category', drop = True, inplace = False).to_dict()['parent']
+parent_category_map[root_category_id] = root_category_id
+print(len(category_to_queries_count))
+
+while True: 
+
+    categories_to_replace = [category for category, count in category_to_queries_count.items() if count < min_queries]
+    if len(categories_to_replace) == 0: break 
+    categories_to_replace_dict = {category: parent_category_map[category] for category in categories_to_replace}
+    df['category'] = df['category'].replace(categories_to_replace_dict)
+    category_to_queries_count = df.category.value_counts().to_dict() 
+
+print(len(category_to_queries_count))
 
 # Create labels in fastText format.
 df['label'] = '__label__' + df['category']
