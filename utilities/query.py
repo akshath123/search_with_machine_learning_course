@@ -11,11 +11,17 @@ from urllib.parse import urljoin
 import pandas as pd
 import fileinput
 import logging
+import fasttext
+import nltk 
+stemmer = nltk.stem.PorterStemmer()
 
+query_classifier = fasttext.load_model("../week3/quercy_classification.bin")
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logging.basicConfig(format='%(levelname)s:%(message)s')
+
+CANDIDATE_COUNT = 5
 
 # expects clicks and impressions to be in the row
 def create_prior_queries_from_group(
@@ -188,7 +194,10 @@ def create_query(user_query, click_prior_query, filters, sort="_score", sortDir=
 
 def search(client, user_query, index="bbuy_products", sort="_score", sortDir="desc", synonym = False):
     #### W3: classify the query
+    processed_query = stemmer.stem(user_query.lower())    
+    category, prob = query_classifier.predict(user_query, k = CANDIDATE_COUNT)
     #### W3: create filters and boosts
+    
     # Note: you may also want to modify the `create_query` method above
     query_obj = create_query(user_query, click_prior_query=None, filters=None, sort=sort, sortDir=sortDir, source=["name", "shortDescription"], synonym = synonym)
     logging.info(query_obj)
